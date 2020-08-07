@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1,shrink-to-fit=no">
+		<!-- CSS only -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.1/css/bootstrap.min.css" integrity="sha384-VCmXjywReHh4PwowAiWNagnWcLhlEJLA5buUprzK8rxFgeH0kww/aWY76TfkUoSX" crossorigin="anonymous">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+<title></title>
+</head>
+
+<body>
+
+<style langage="css" type="text/css">
+	.contain {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-around;
+	}
+
+	.box {
+		display: block;
+		width: 100px;
+		height: 100px;
+		background-color: #5b8bd0;
+		margin: 20px;
+		text-align: center;
+		line-height: 100px;
+		vertical-align: 50px;
+		color: white;
+		font-size: 32px;
+		cursor: pointer;
+		transition: 0.7s;
+	}
+
+	.hitChange {
+		border-radius: 50%;
+		transform: rotate(1440deg);
+	}
+
+	.outChange {
+		border-radius: 50%;
+		transform: rotate(1440deg);
+	}
+
+	h1 {
+  		padding: 0.5em;
+  		background: aliceblue;
+  		box-shadow: 0 0 4px rgba(0, 0, 0, 0.23);
+  		font-size: 2em
+	}
+
+	.boxA {
+		display: block;
+		text-align: center;
+		max-width: 500px;
+    	padding: 0.5em 1em;
+   		margin: 2em auto;
+    	background: #f0f7ff;
+    	border: dashed 2px #5b8bd0;/*点線*/
+	}
+	.boxA p {
+    	margin: 0; 
+    	padding: 0;
+	}
+</style>
+
+<h1>当たりを探すゲーム</h1>
+<div class="boxA">
+	<label><p>ボタンの数</p>
+	  <select id="area" class="boxNum form-control" >
+	  	'<option value="0">0</option>
+	  </select>
+	</label>
+</div>
+
+<div class="contain"></div>
+
+<script language="javascript" type="text/javascript">
+	$(function(){
+		for (var i = 1; i <100; i++) {
+			$('<option value="'+i+'">'+i+'</option>').appendTo('#area');
+		}
+		$('select').change(function(){
+			var val = $(this).val();
+			const hitNum = Math.floor(Math.random() * val) + 1;
+
+			$('.contain').empty();
+			for(var i = 1; i <= val; i++){
+				if(i == hitNum){
+					$('<div class="box hit"><p>' + i + '</p></div>').appendTo('.contain');
+				}else{
+					$('<div class="box"><p>' + i + '</p></div>').appendTo('.contain');
+				}
+			}
+		});
+
+		$(document).on('click','.box', function(){
+			if($(this).hasClass('hit')){
+					$(this).addClass("hitChange");
+					$(this).delay(500).queue(function(){
+						$(this).css('background-color', '#5CD166');
+						$(this).text('あたり');
+					});	
+			}else{
+				$(this).addClass("outChange");
+				$(this).delay(500).queue(function(){
+						$(this).css('background-color', '#0057D1');
+						$(this).text('はずれ');
+				});	
+			}
+		});
+	});
+</script>
+
+
+
+
+</body>
+</html>
