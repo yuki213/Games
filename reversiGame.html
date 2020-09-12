@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1,shrink-to-fit=no">
+		<!-- CSS only -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.1/css/bootstrap.min.css" integrity="sha384-VCmXjywReHh4PwowAiWNagnWcLhlEJLA5buUprzK8rxFgeH0kww/aWY76TfkUoSX" crossorigin="anonymous">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+<title>オセロ</title>
+</head>
+
+<body>
+
+<style langage="css" type="text/css">
+	
+
+
+	h1 {
+  		padding: 0.5em;
+ 		background: #c1e4e9;
+    	box-shadow: 0 0 4px rgba(0, 0, 0, 0.23);
+    	font-size: 2em;
+    	letter-spacing: 0.1em;
+	}
+
+	.contain {
+		width: 400px;
+		margin: 40px auto;
+		box-shadow: 1px 5px 6px 6px #180614;
+	}
+
+	.box {
+		width: 50px;
+		height: 50px;
+		transition: 0.7s;
+		border: 1px solid #180614;
+		background-color: #006e54;
+		pointer-events: none;
+	}
+
+	.enablePut {
+		background-color: #38b48b;
+		cursor: pointer;
+		pointer-events: auto;
+	}
+
+	.circleB{
+		background-color: #180614;
+  		width: 45px;
+  		height: 45px;
+  		border-radius: 50%;
+	}
+
+	.circleW{
+		background-color: #ebf6f7;
+  		width: 45px;
+  		height: 45px;
+  		border-radius: 50%;
+	}
+
+	.playUserTurn p {
+		font-size: 24px;
+		color: #180614;
+		display: block;
+		width: 400px;
+		margin: auto;
+	}
+
+	.winner p {
+		font-size: 24px;
+		color: #180614;
+		display: block;
+		width: 400px;
+		margin: auto;	
+	}
+</style>
+
+<h1>オセロゲーム</h1>
+<div class="contain"></div>
+<div class="playUserTurn"></div>
+<div class="winner"></div>
+
+<script language="javascript" type="text/javascript">
+$(function(){
+
+
+
+	/*####################    初期表示処理     ###########################*/
+	
+	/*n×n配列を生成*/
+	var n = 8;
+	var tbl = new Array(n);
+	for(var y = 0; y < n; y++) {
+		tbl[y] = new Array(n);
+		for(var x = 0; x < n; x++) {
+			tbl[y][x] = "";
+		}
+	}
+	/*開始時のターンを黒に設定する*/
+	var turn = "b";
+	/*配列に石の初期配置を設定する*/
+	var right = parseInt((n - 1)/2);
+	var left = parseInt(n / 2);
+	var top = parseInt((n - 1) / 2);
+	var bottom = parseInt(n / 2);
+	tbl[top][right] = "b";
+	tbl[top][left] = "w";
+	tbl[bottom][right] = "w";
+	tbl[bottom][left] = "b";
+	/*黒石を置ける場所を配列に設定*/
+	viewEnablePutPoints("b", "w");	
+	/*配列から盤面を表示する*/
+	viewField();
+
+	/*#####################################################################*/
+
+
+
+
+	/*####################     クリック時処理    ############################*/
+	
+	$(document).on('click','.box', function(){
+		/*配列から配石可能の情報を削除*/
+		removeEnablePut();
+
+		/*黒ターンの場合*/
+		if(turn == "b"){
+			/*クリックした場所に黒を設定*/
+			tbl[this.parentNode.rowIndex][this.cellIndex] =  "b";
+			/*石を返す*/
+			reverse("b", "w", this.parentNode.rowIndex, this.cellIndex);
+			/*白の配石可能場所を設定*/
+			var hasEnablePutBool = viewEnablePutPoints("w","b");
+			/*白の配石可能場所があった場合、白にターンを変更*/
+			if(hasEnablePutBool){
+				turn = "w";	
+			/*白の配石可能場所がない場合、黒石の配石可能場所を設定*/
+			}else {
+				hasEnablePutBool = viewEnablePutPoints("b", "w");
+				/*両石の配石可能場所がない場合、終了処理を実施*/
+				if(!hasEnablePutBool){
+					finish();
+					turn = "finish";
+				}
+			}
+			/*盤面を作成*/
+			viewField();
+			
+		/*白ターンの場合*/
+		} else{
+			/*クリックした場所に白を設定*/
+			tbl[this.parentNode.rowIndex][this.cellIndex] =  "w";
+			/*石を返す*/
+			reverse("w", "b", this.parentNode.rowIndex, this.cellIndex);
+			/*黒の配石可能場所を設定*/
+			var hasEnablePutBool = viewEnablePutPoints("b","w");
+			/*黒の配石可能場所がある場合、黒ターンに変更*/
+			if(hasEnablePutBool){
+				turn = "b";
+			/*黒の配石可能場所がない場合、白石の配石可能場所を設定*/
+			}else {
+				hasEnablePutBool = viewEnablePutPoints("w", "b");
+				/*両石の配石可能場所がない場合、終了処理を実施*/
+				if(!hasEnablePutBool){
+					finish();
+					turn = "finish";
+				}
+			}
+			/*盤面を作成*/
+			viewField();
+		}
+	});
+
+	/*########################################################################*/
+
+
+
+	/*##########################      関数      #################################*/
+
+
+	/*
+	 *
+	 *終了処理
+	 *
+	 */
+	function finish(){
+		/*黒石と白石の数を数える*/
+		var countB = 0;
+		var countW = 0;
+		for(var y = 0; y < n; y++){
+			for(var x = 0; x < n; x++){
+				if(tbl[y][x] == "b"){
+					countB++;
+				}
+				if(tbl[y][x] == "w"){
+					countW++;
+				}
+			}
+		}
+		/*数を比べて勝者を表示する*/
+		if(countB > countW){
+			$('<p>勝者：黒</p>').appendTo('.winner');
+		}else if(countW > countB){
+			$('<p>勝者：白</p>').appendTo('.winner');
+		}else {
+			$('<p>勝者：引き分け</p>').appendTo('.winner');
+		}
+		/*各石の数を表示*/
+		$('<p>黒石：' + countB + '個</p>').appendTo('.winner');
+		$('<p>白石：' + countW + '個</p>').appendTo('.winner');
+
+	}
+
+
+	/*
+	 *
+	 *配石可能場所を設定
+	 *
+	 */
+	function viewEnablePutPoints(userStone,oppStone){
+		var hasEnablePutBool = false;
+		/*配列をループ*/
+		for(var y = 0; y < n; y++){
+			for(var x = 0; x < n; x++){
+				/*マス目に石が置かれていない場合、処理を実行*/
+				if(tbl[y][x] == ""){	
+					var bool = false;
+					/*マス目から8方向に進む*/
+					var vector = [-1, 0 , 1 ]
+					for(var yy = 0; yy < 3; yy++){
+						for(var xx = 0; xx < 3; xx++){
+							/*中心（マス目自身）を除く*/
+							if(!(vector[yy] == 0 && vector[xx] == 0)){
+								/*隣マスが盤内かつ相手の石*/
+								if(isEnableTbl(y + vector[yy], x + vector[xx]) && tbl[y + vector[yy]][x + vector[xx]] == oppStone){
+									/*延長線上を進む*/
+									for(i = 2; i < n; i++){
+										var currentY = y + vector[yy] * i;
+										var currentX = x + vector[xx] * i;
+										/*盤外に出たらループを抜ける*/
+										if(!isEnableTbl(currentY, currentX)){
+											break;
+										}
+										/*石が置かれていなければループを抜ける*/
+										if(tbl[currentY][currentX] == ""){
+											break;
+										}
+										/*自石が置かれていればフラグをtrueにしてループを抜ける*/
+										if(tbl[currentY][currentX] == userStone){
+											bool = true;
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+					/*マス目に石が置くことが可能な場合、配石可能場所として設定*/
+					if(bool){
+						tbl[y][x] =  "enablePut";
+						hasEnablePutBool = true;
+					}
+				}
+			}
+		}
+		return hasEnablePutBool;
+	}
+
+	
+
+	/*
+	 *
+	 *盤面を表示処理
+	 *
+	 **/
+	function viewField(){
+		/*テーブル内の要素を初期化*/
+		$('table').remove();
+		$('<table></table>').appendTo('.contain');
+		/*配列をループ*/
+		for(y = 0; y < n; y++){
+			/*列を作成*/
+			var row = $('<tr></tr>').appendTo('table');
+			for(x = 0; x < n; x++){
+				/*黒の場合*/
+				if(tbl[y][x] == "b"){
+					$('<td class="box b"><div class="circleB"></div></td>').appendTo(row);
+				/*白の場合*/
+				}else if(tbl[y][x] == "w"){
+					$('<td class="box w"><div class="circleW"></div></td>').appendTo(row);
+				/*配石可能の場合*/
+				}else if(tbl[y][x] == "enablePut"){
+					$('<td class="box enablePut"></td>').appendTo(row);
+				/*情報が空の場合*/
+				}else {
+					$('<td class="box"></td>').appendTo(row);
+				}
+			}
+		}
+
+		/*ターンを表示*/
+		$(".playUserTurn").empty();
+		if(turn == "b"){
+			$('<p>ターン：黒</p>').appendTo('.playUserTurn');
+		}else if(turn == "w"){
+			$('<p>ターン：白</p>').appendTo('.playUserTurn');
+		}
+	}
+	
+
+	/**
+	 * 座標がテーブル内であるか判定する。
+	 *
+	 */
+	function isEnableTbl(ny, nx) {
+		if (ny >= 0 && ny < n && nx >= 0 && nx < n) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+
+	/**
+	 *
+	 *石を返す
+	 *
+	 */
+	function reverse(userStone,oppStone,y,x){
+		/*隣マスを一つずつ選択*/
+		var vector = [-1, 0 , 1 ]
+		for(var yy = 0; yy < 3; yy++){
+			for(var xx = 0; xx < 3; xx++){
+				/*マス目が8方向のいずれかに進んだ時*/
+				if(!(vector[yy] == 0 && vector[xx] == 0)){
+					/*隣マスが盤内かつ相手の石*/
+					if(isEnableTbl(y + vector[yy], x + vector[xx]) && tbl[y + vector[yy]][x + vector[xx]] == oppStone){
+						var reverseArray = [[y + vector[yy],x + vector[xx]]];
+						var reverseBool = false;
+						/*延長線上を進む*/
+						for(i = 2; i < n; i++){
+							var currentY = y + vector[yy] * i;
+							var currentX = x + vector[xx] * i;
+							/*盤外に出たらっループを抜ける*/
+							if(!isEnableTbl(currentY, currentX)){
+								break;
+							}
+							/*石が置かれていなければループを抜ける*/
+							if(tbl[currentY][currentX] == ""){
+								break;
+							}
+							/*自石が置かれていればフラグをtrueにしてループを抜ける*/
+							if(tbl[currentY][currentX] == userStone){
+								reverseBool = true;
+								break;
+							}
+							/*返す対象の石を一時的な配列に保存*/
+							reverseArray.push([currentY,currentX])
+						}
+						/*石の逆転処理を実行*/
+						if(reverseBool){
+							for(var j = 0; j < reverseArray.length; j++){
+								tbl[reverseArray[j][0]][reverseArray[j][1]] = userStone;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+	/*
+	 *
+	 *配列から配石可能の情報を削除する
+	 *
+	 */
+	function removeEnablePut(){
+		for(var i = 0; i < n; i++){
+			for(var j = 0; j < n; j++){
+				if(tbl[i][j] == "enablePut"){
+					tbl[i][j] = "";
+				}
+			}
+		}
+	}
+
+});
+
+</script>
+
+</body>
+</html>
